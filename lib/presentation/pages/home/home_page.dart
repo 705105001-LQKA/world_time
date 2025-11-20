@@ -20,26 +20,21 @@ class _HomePageState extends State<HomePage> {
   final TimeController controller = Get.put(TimeController());
   final RxString searchQuery = ''.obs;
 
-  // ScrollController cho ListView dọc
   final ScrollController listScrollController = ScrollController();
-
-  // Row scroll sync service (quản lý tất cả ScrollController của từng hàng)
   final RowScrollSync _scrollSync = RowScrollSync();
 
   late tz.Location hcmLocation;
-
-  // Giới hạn số thành phố hiển thị
   static const int _kMaxCities = 15;
+
+  Timer? _minuteTimer;
 
   @override
   void initState() {
     super.initState();
     hcmLocation = tz.getLocation('Asia/Ho_Chi_Minh');
 
-    // Gọi updateTimes ngay
     controller.updateTimes();
 
-    // Căn chỉnh tới đầu phút kế tiếp, sau đó cập nhật định kỳ
     final now = DateTime.now();
     final nextTick = DateTime(now.year, now.month, now.day, now.hour, now.minute)
         .add(const Duration(minutes: 1));
@@ -47,18 +42,19 @@ class _HomePageState extends State<HomePage> {
 
     Future.delayed(initialDelay, () {
       controller.updateTimes();
-      setState(() {}); // cập nhật utcNow mỗi phút
+      if (mounted) setState(() {});
 
-      Timer.periodic(const Duration(minutes: 1), (_) {
+      _minuteTimer = Timer.periodic(const Duration(minutes: 1), (_) {
         controller.updateTimes();
-        setState(() {}); // buộc build lại để utcNow mới
+        if (mounted) setState(() {});
       });
     });
   }
 
   @override
   void dispose() {
-    // detach all controllers managed by RowScrollSync
+    _minuteTimer?.cancel();
+
     for (final k in _scrollSync.keys()) {
       try {
         _scrollSync.detach(k);
@@ -68,12 +64,10 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  // đảm bảo có controller cho cityId; trả về ScrollController từ RowScrollSync
   ScrollController _ensureControllerFor(String cityId) {
     return _scrollSync.attach(cityId, (id) => _onRowScroll(id));
   }
 
-  // Trim controllers để chỉ giữ những key đang hiển thị (avoid leak)
   void _trimControllersForDisplayed(List<String> displayedIds) {
     final toRemove =
     _scrollSync.keys().where((k) => !displayedIds.contains(k)).toList();
@@ -82,12 +76,10 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // đồng bộ: khi một controller thay đổi, chuyển tiếp tới RowScrollSync
   void _onRowScroll(String sourceId) {
     _scrollSync.onRowScroll(sourceId);
   }
 
-  // Khi một controller mới attach (sau build), đồng bộ nó tới lastRatio
   void _syncControllerIfNeeded(String cityId) {
     _scrollSync.syncIfNeeded(cityId);
   }
@@ -97,12 +89,10 @@ class _HomePageState extends State<HomePage> {
     final nowSystem = DateTime.now();
     final nowUtcReal = DateTime.now().toUtc();
 
-    // determine base date (UTC midnight) from controller or fallback to today's UTC date
-    final selectedDateUtc = controller.selectedDate.value; // DateTime? (UTC midnight) or null
+    final selectedDateUtc = controller.selectedDate.value;
     final baseDate = selectedDateUtc ??
         DateTime.utc(nowSystem.year, nowSystem.month, nowSystem.day);
 
-    // build utcNow: combine baseDate's YMD with current clock time (UTC)
     final utcNow = DateTime.utc(
       baseDate.year,
       baseDate.month,
@@ -115,7 +105,6 @@ class _HomePageState extends State<HomePage> {
     debugPrint('🔍 System time: $nowSystem');
     debugPrint('🌐 UTC time used in UI: $utcNow');
 
-    // hcmStart: midnight at selected day in HCM timezone
     final hcmStart =
     tz.TZDateTime(hcmLocation, baseDate.year, baseDate.month, baseDate.day, 0);
 
@@ -132,7 +121,6 @@ class _HomePageState extends State<HomePage> {
         ),
         body: Column(
           children: [
-            // Danh sách thành phố
             Expanded(
               child: Obx(() {
                 final filtered = controller.cityTimes
@@ -141,18 +129,15 @@ class _HomePageState extends State<HomePage> {
                     .toList();
 
                 if (filtered.isEmpty) {
-                  // clean up controllers if none displayed
                   _trimControllersForDisplayed([]);
                   return const Center(child: Text('No matching cities.'));
                 }
 
-                // prepare display list (limited)
                 final displayCount =
                 filtered.length > _kMaxCities ? _kMaxCities : filtered.length;
                 final displayed = filtered.take(displayCount).toList();
                 final displayedIds = displayed.map((c) => c.cityName).toList();
 
-                // trim controllers not used anymore
                 _trimControllersForDisplayed(displayedIds);
 
                 return Stack(
@@ -164,7 +149,7 @@ class _HomePageState extends State<HomePage> {
                       itemCount: displayed.length,
                       onReorder: (oldIndex, newIndex) {
                         controller.reorderCity(oldIndex, newIndex);
-                        setState(() {}); // cập nhật lại UI
+                        setState(() {});
                       },
                       itemBuilder: (context, index) {
                         final city = displayed[index];
@@ -175,7 +160,7 @@ class _HomePageState extends State<HomePage> {
 
                         return Dismissible(
                           key: ValueKey(cityId),
-                          direction: DismissDirection.none, // không cho swipe xoá
+                          direction: DismissDirection.none,
                           child: CityTimeRow(
                             cityTime: city,
                             utcNow: utcNow,
@@ -187,8 +172,6 @@ class _HomePageState extends State<HomePage> {
                       padding:
                       const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
                     ),
-
-                    // banner nếu bị giới hạn
                     if (filtered.length > _kMaxCities)
                       Positioned(
                         left: 0,
@@ -202,10 +185,10 @@ class _HomePageState extends State<HomePage> {
                               color: Colors.black87,
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: Text(
-                              'Chỉ hiển thị $_kMaxCities thành phố. Xóa bớt để hiển thị thêm.',
+                            child: const Text(
+                              'Chỉ hiển thị 15 thành phố. Xóa bớt để hiển thị thêm.',
                               style:
-                              const TextStyle(color: Colors.white, fontSize: 12),
+                              TextStyle(color: Colors.white, fontSize: 12),
                             ),
                           ),
                         ),

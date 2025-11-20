@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tzData;
+import 'package:timezone/data/latest.dart' as tz_data;
 
 import '../../domain/entities/city_time.dart';
 
@@ -23,7 +23,7 @@ class TimeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    tzData.initializeTimeZones();
+    tz_data.initializeTimeZones();
     loadCities();
   }
 
@@ -148,24 +148,35 @@ class TimeController extends GetxController {
   }
 
   void showSafeSnackbar(String title, String message) {
-    Get.showSnackbar(
-      GetSnackBar(
-        titleText: Text(
-          title,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    final context = Get.context;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                message,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          duration: const Duration(seconds: 2),
         ),
-        messageText: Text(
-          message,
-          style: const TextStyle(color: Colors.white),
-        ),
-        snackPosition: SnackPosition.TOP,
-        snackStyle: SnackStyle.FLOATING,
-        margin: const EdgeInsets.only(top: 0, left: 47, right: 34),
-        backgroundColor: Colors.redAccent,
-        borderRadius: 8,
-        duration: const Duration(seconds: 2),
-        isDismissible: true,
-      ),
-    );
+      );
+    }
   }
 }

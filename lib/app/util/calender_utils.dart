@@ -17,12 +17,12 @@ String buildDescription({
     final startStr = DateFormat('h:mma E, MMM d yyyy').format(localStart);
     final endStr = DateFormat('h:mma E, MMM d yyyy').format(localEnd);
 
-    buffer.writeln('${city.cityName}');
-    buffer.writeln('$startStr');
+    buffer.writeln(city.cityName);
+    buffer.writeln(startStr);
     buffer.writeln('$endStr\n');
   }
 
-  buffer.writeln('\nScheduled with your app');
+  buffer.writeln('\nScheduled with app World Time');
   return buffer.toString();
 }
 
@@ -41,5 +41,7 @@ String buildGoogleCalendarUrl({
   return 'https://www.google.com/calendar/render?action=TEMPLATE'
       '&text=$encodedTitle'
       '&dates=$startStr/$endStr'
-      '&details=$encodedDetails';
+      '&details=$encodedDetails'
+      '&location=Online'
+      '&ctz=Asia/Ho_Chi_Minh';
 }

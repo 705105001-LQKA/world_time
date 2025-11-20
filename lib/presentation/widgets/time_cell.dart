@@ -76,7 +76,7 @@ class TimeCell extends StatelessWidget {
       emoji = '🌃';
     }
 
-    if (isCurrent && (isStart || isEnd)) {
+    if (isCurrent && (isStart || isEnd || isTagged)) {
       gradient = LinearGradient(
         colors: [Colors.blueAccent, Colors.green.shade700],
         begin: Alignment.topLeft,
