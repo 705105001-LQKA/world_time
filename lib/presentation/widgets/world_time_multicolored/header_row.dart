@@ -3,19 +3,21 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 
-import '../controllers/time_controller.dart';
-import '../../domain/entities/city_time.dart';
+import '../../controllers/time_controller.dart';
+import '../../../domain/entities/city_time.dart';
 
 class HeaderRow extends StatelessWidget {
   final CityTime cityTime;
   final DateTime utcNow;
   final tz.Location location;
+  final VoidCallback onHomeChanged;
 
   const HeaderRow({
     super.key,
     required this.cityTime,
     required this.utcNow,
     required this.location,
+    required this.onHomeChanged,
   });
 
   String _formatUtcOffset(Duration offset) {
@@ -141,6 +143,25 @@ class HeaderRow extends StatelessWidget {
               ),
             ],
           ),
+        ),
+
+        IconButton(
+          icon: Obx(() {
+            final isDefault = controller.defaultCityId.value == cityTime.cityName;
+            return Icon(
+              Icons.home,
+              color: isDefault ? Colors.green : Colors.grey,
+            );
+          }),
+          tooltip: 'Đặt làm mặc định',
+          padding: EdgeInsets.zero,
+          onPressed: () {
+            controller.setDefaultCity(cityTime.cityName);
+            onHomeChanged(); // Gọi lại setState từ HomePage
+          },
+          iconSize: 24.0,
+          constraints: const BoxConstraints(minWidth: 0, minHeight: 0, maxWidth: 24, maxHeight: 24),
+          visualDensity: VisualDensity.compact,
         ),
 
         IconButton(

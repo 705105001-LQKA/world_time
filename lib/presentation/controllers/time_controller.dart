@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -13,6 +14,8 @@ class TimeController extends GetxController {
   final utcNow = DateTime.now().toUtc().obs;
   final selectedStartUtc = Rx<DateTime?>(null);
   final selectedEndUtc = Rx<DateTime?>(null);
+  final resetCounter = 0.obs;
+  final RxString defaultCityId = ''.obs;
 
   // NEW: selected calendar date (nullable). Stored as UTC midnight.
   final Rxn<DateTime> selectedDate = Rxn<DateTime>();
@@ -20,32 +23,41 @@ class TimeController extends GetxController {
   // Optional reload indicator if you need it later
   final RxBool isReloading = false.obs;
 
+  Timer? _minuteTimer;
+
   @override
   void onInit() {
     super.onInit();
     tz_data.initializeTimeZones();
     loadCities();
+    updateTimes();
+
+    // ✅ chỉ tạo 1 timer duy nhất trong controller
+    _minuteTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      updateTimes();
+    });
+  }
+
+  @override
+  void onClose() {
+    _minuteTimer?.cancel();
+    super.onClose();
   }
 
   // --- calendar date helpers ---
-  /// Set a selected calendar date. Accepts a local DateTime (from picker)
-  /// and stores normalized UTC midnight for consistent tz conversions.
   void setSelectedDate(DateTime dateLocal) {
     final utcMidnight = DateTime.utc(dateLocal.year, dateLocal.month, dateLocal.day);
     selectedDate.value = utcMidnight;
   }
 
-  /// Clear the selected calendar date (return to default behavior using utcNow)
   void clearSelectedDate() {
     selectedDate.value = null;
   }
 
   // --- existing city/time methods ---
-
   void addCity(String cityName, String timezone) {
     const int maxCities = 15;
 
-    // Kiểm tra số lượng
     if (cityTimes.length >= maxCities) {
       Get.snackbar(
         'Giới hạn thành phố',
@@ -57,10 +69,8 @@ class TimeController extends GetxController {
       return;
     }
 
-    // Ngăn thêm trùng (theo timezone hoặc theo tên tuỳ ý)
     final exists = cityTimes.any((c) =>
-    c.cityName.toLowerCase() == cityName.toLowerCase() ||
-        c.timezone == timezone);
+    c.cityName.toLowerCase() == cityName.toLowerCase() || c.timezone == timezone);
     if (exists) {
       Get.snackbar(
         'Đã có trong danh sách',
@@ -78,16 +88,29 @@ class TimeController extends GetxController {
 
     cityTimes.add(cityTime);
     saveCities();
+
+    if (cityTimes.length == 1) {
+      setDefaultCity(cityTime.cityName);
+    }
   }
 
   void removeCity(String cityName) {
     cityTimes.removeWhere((ct) => ct.cityName == cityName);
     saveCities();
+
+    if (defaultCityId.value == cityName) {
+      if (cityTimes.isNotEmpty) {
+        setDefaultCity(cityTimes.first.cityName);
+      } else {
+        defaultCityId.value = '';
+        storage.remove('defaultCityId');
+      }
+    }
   }
 
   void updateTimes() {
     final now = DateTime.now();
-    utcNow.value = now.toUtc(); // cập nhật thời gian dùng cho UI
+    utcNow.value = now.toUtc();
 
     debugPrint('⏱ updateTimes() called at: $now');
 
@@ -118,6 +141,21 @@ class TimeController extends GetxController {
         time: tz.TZDateTime.now(tz.getLocation(item['timezone'])),
       );
     }).toList();
+
+    final savedDefault = storage.read<String>('defaultCityId');
+
+    if (savedDefault != null && loaded.any((c) => c.cityName == savedDefault)) {
+      defaultCityId.value = savedDefault;
+      final index = loaded.indexWhere((c) => c.cityName == savedDefault);
+      if (index > 0) {
+        final home = loaded.removeAt(index);
+        loaded.insert(0, home);
+      }
+    } else if (loaded.isNotEmpty) {
+      defaultCityId.value = loaded.first.cityName;
+      storage.write('defaultCityId', defaultCityId.value);
+    }
+
     cityTimes.assignAll(loaded);
   }
 
@@ -125,7 +163,6 @@ class TimeController extends GetxController {
     if (newIndex > oldIndex) newIndex -= 1;
     final item = cityTimes.removeAt(oldIndex);
     cityTimes.insert(newIndex, item);
-
     saveCities();
   }
 
@@ -145,6 +182,27 @@ class TimeController extends GetxController {
       cityTimes[index] = cityTimes[index + 1];
       cityTimes[index + 1] = temp;
     }
+  }
+
+  void setDefaultCity(String cityName) {
+    defaultCityId.value = cityName;
+    storage.write('defaultCityId', cityName);
+
+    final index = cityTimes.indexWhere((c) => c.cityName == cityName);
+    if (index > 0) {
+      final city = cityTimes.removeAt(index);
+      cityTimes.insert(0, city);
+    }
+
+    // cập nhật giờ hiện tại theo location mới
+    final location = tz.getLocation(cityTimes.first.timezone);
+    final nowLocal = tz.TZDateTime.now(location);
+    utcNow.value = nowLocal.toUtc();
+
+    // ép TimeRangeSelector reset về giờ hiện tại của home city mới
+    resetCounter.value++;
+
+    updateTimes();
   }
 
   void showSafeSnackbar(String title, String message) {

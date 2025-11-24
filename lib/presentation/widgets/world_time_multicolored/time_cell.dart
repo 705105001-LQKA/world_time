@@ -31,7 +31,7 @@ class TimeCell extends StatelessWidget {
     final localEnd = tz.TZDateTime.from(utcEnd, location);
     final localNow = tz.TZDateTime.from(utcNow, location);
 
-    // Normalize selection for flag checks (millis, UTC)
+    // Normalize selection
     int? msSelStart = selStart?.toUtc().millisecondsSinceEpoch;
     int? msSelEnd = selEnd?.toUtc().millisecondsSinceEpoch;
     final msUtcStart = utcStart.toUtc().millisecondsSinceEpoch;
@@ -48,7 +48,8 @@ class TimeCell extends StatelessWidget {
     final isCurrent = localNow.isAfter(localStart) && localNow.isBefore(localEnd);
     final isStart = msSelStart != null && msSelStart == msUtcStart;
     final isEnd = msSelEnd != null && msSelEnd == msUtcEnd;
-    final isTagged = msS != null && msE != null && !(msUtcStart < msS) && (msUtcStart < msE);
+    // ✅ sửa điều kiện: highlight toàn bộ range
+    final isTagged = msS != null && msE != null && msUtcStart >= msS && msUtcStart < msE;
     final isMidnight = localStart.hour == 0;
 
     // default colors/emojis
@@ -136,7 +137,9 @@ class TimeCell extends StatelessWidget {
           color: gradient == null ? bgColor : null,
           gradient: gradient,
           borderRadius: BorderRadius.circular(4),
-          boxShadow: isCurrent ? [BoxShadow(color: Colors.black26, blurRadius: 4, offset: const Offset(0, 1))] : null,
+          boxShadow: isCurrent
+              ? [BoxShadow(color: Colors.black26, blurRadius: 4, offset: const Offset(0, 1))]
+              : null,
         ),
         child: content,
       ),

@@ -8,7 +8,7 @@ void main() async {
   await GetStorage.init(); // ✅ bắt buộc
 
   await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.landscapeRight,
+    DeviceOrientation.portraitUp,
   ]);
 
   runApp(const App()); // ← Gọi App từ presentation

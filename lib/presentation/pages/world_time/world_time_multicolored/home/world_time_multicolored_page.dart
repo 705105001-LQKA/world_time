@@ -2,28 +2,28 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter/services.dart';
 import 'package:timezone/timezone.dart' as tz;
 
-import '../../widgets/city_time_row.dart';
-import '../../controllers/time_controller.dart';
-import 'appbar_action.dart';
-import 'row_scroll_sync.dart';
+import '../../../../widgets/world_time_multicolored/city_time_row.dart';
+import '../../../../controllers/time_controller.dart';
+import 'world_time_multicolored_appbar_action.dart';
+import '../city_search/world_time_multicolored_row_scroll_sync.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class WorldTimeMulticoloredPage extends StatefulWidget {
+  const WorldTimeMulticoloredPage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<WorldTimeMulticoloredPage> createState() => _WorldTimeMulticoloredPageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _WorldTimeMulticoloredPageState extends State<WorldTimeMulticoloredPage> {
   final TimeController controller = Get.put(TimeController());
   final RxString searchQuery = ''.obs;
 
   final ScrollController listScrollController = ScrollController();
   final RowScrollSync _scrollSync = RowScrollSync();
 
-  late tz.Location hcmLocation;
   static const int _kMaxCities = 15;
 
   Timer? _minuteTimer;
@@ -31,9 +31,11 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    hcmLocation = tz.getLocation('Asia/Ho_Chi_Minh');
 
-    controller.updateTimes();
+    // ✅ ép orientation sang ngang khi vào trang này
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+    ]);
 
     final now = DateTime.now();
     final nextTick = DateTime(now.year, now.month, now.day, now.hour, now.minute)
@@ -54,6 +56,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _minuteTimer?.cancel();
+    Get.delete<TimeController>(); // ✅ hủy controller luôn
 
     for (final k in _scrollSync.keys()) {
       try {
@@ -61,6 +64,13 @@ class _HomePageState extends State<HomePage> {
       } catch (_) {}
     }
     listScrollController.dispose();
+    debugPrint('🔴 AppleActions dispose called');
+
+    // ✅ khi thoát trang ngang, đặt lại orientation về dọc
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+
     super.dispose();
   }
 
@@ -89,29 +99,37 @@ class _HomePageState extends State<HomePage> {
     final nowSystem = DateTime.now();
     final nowUtcReal = DateTime.now().toUtc();
 
+    final controller = Get.find<TimeController>();
+
+    // ✅ Lấy thành phố mặc định và timezone
+    final defaultCity = controller.cityTimes.firstWhereOrNull(
+          (c) => c.cityName == controller.defaultCityId.value,
+    );
+    final defaultLocation = defaultCity != null
+        ? tz.getLocation(defaultCity.timezone)
+        : tz.getLocation('Asia/Ho_Chi_Minh');
+
+    // ✅ Lấy thời gian hiện tại theo timezone của thành phố mặc định
+    final nowInDefault = tz.TZDateTime.now(defaultLocation);
+
+    // ✅ Tính ngày cơ sở theo timezone của home
     final selectedDateUtc = controller.selectedDate.value;
     final baseDate = selectedDateUtc ??
-        DateTime.utc(nowSystem.year, nowSystem.month, nowSystem.day);
+        DateTime.utc(nowInDefault.year, nowInDefault.month, nowInDefault.day);
 
-    final utcNow = DateTime.utc(
-      baseDate.year,
-      baseDate.month,
-      baseDate.day,
-      nowUtcReal.hour,
-      nowUtcReal.minute,
-      nowUtcReal.second,
-    );
+    final utcNow = nowInDefault.toUtc();
 
     debugPrint('🔍 System time: $nowSystem');
     debugPrint('🌐 UTC time used in UI: $utcNow');
 
+    // ✅ Mốc bắt đầu của ngày theo timezone của home
     final hcmStart =
-    tz.TZDateTime(hcmLocation, baseDate.year, baseDate.month, baseDate.day, 0);
+    tz.TZDateTime(defaultLocation, baseDate.year, baseDate.month, baseDate.day, 0);
 
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('World Time'),
+          title: const Text('World Time Multicolored'),
           actions: [
             AppBarActions(
               controller: controller,
@@ -124,8 +142,7 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: Obx(() {
                 final filtered = controller.cityTimes
-                    .where((ct) =>
-                    ct.cityName.toLowerCase().contains(searchQuery.value))
+                    .where((ct) => ct.cityName.toLowerCase().contains(searchQuery.value))
                     .toList();
 
                 if (filtered.isEmpty) {
@@ -166,11 +183,11 @@ class _HomePageState extends State<HomePage> {
                             utcNow: utcNow,
                             hcmStart: hcmStart,
                             scrollController: rowController,
+                            onHomeChanged: () => setState(() {}),
                           ),
                         );
                       },
-                      padding:
-                      const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
                     ),
                     if (filtered.length > _kMaxCities)
                       Positioned(
@@ -179,16 +196,14 @@ class _HomePageState extends State<HomePage> {
                         bottom: 8,
                         child: Center(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
                               color: Colors.black87,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Text(
                               'Chỉ hiển thị 15 thành phố. Xóa bớt để hiển thị thêm.',
-                              style:
-                              TextStyle(color: Colors.white, fontSize: 12),
+                              style: TextStyle(color: Colors.white, fontSize: 12),
                             ),
                           ),
                         ),

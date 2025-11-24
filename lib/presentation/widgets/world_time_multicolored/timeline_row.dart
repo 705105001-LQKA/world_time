@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:timezone/timezone.dart' as tz;
-
-import '../controllers/time_controller.dart';
+import '../../controllers/time_controller.dart';
 import 'time_cell.dart';
 import 'package:get/get.dart';
 
@@ -11,7 +10,7 @@ class TimelineRow extends StatelessWidget {
   final DateTime utcNow;
   final ScrollController scrollController;
 
-  // New params: values passed from Obx (may be null)
+  // Các giá trị selection từ controller
   final DateTime? selStart;
   final DateTime? selEnd;
   final DateTime? selectedDateUtc;
@@ -29,12 +28,15 @@ class TimelineRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use controller only for writing selection (onDoubleTap)
     final controller = Get.find<TimeController>();
 
     final children = <Widget>[];
     for (int i = 0; i < 24; i++) {
-      final utcStart = hcmStart.add(Duration(hours: i)).toUtc();
+      final utcBase = hcmStart.toUtc();
+      final localBase = tz.TZDateTime.from(utcBase, location);
+
+      final localStart = localBase.add(Duration(hours: i));
+      final utcStart = localStart.toUtc();
       final utcEnd = utcStart.add(const Duration(hours: 1));
 
       children.add(TimeCell(
@@ -46,7 +48,6 @@ class TimelineRow extends StatelessWidget {
         selEnd: selEnd,
         selectedDateUtc: selectedDateUtc,
         onDoubleTap: () {
-          // selection logic (kept here)
           DateTime newStart;
           DateTime newEnd;
           final curStart = controller.selectedStartUtc.value;
