@@ -174,7 +174,7 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
                 child: Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.green, width: 2),
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),

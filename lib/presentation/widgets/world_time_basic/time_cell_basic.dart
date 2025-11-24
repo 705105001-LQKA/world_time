@@ -88,10 +88,16 @@ class TimeCellBasic extends StatelessWidget {
     // ✅ Làm mờ nếu có selection và ô nằm ngoài khoảng
     final bool isOutsideSelection = hasSelection && !(isStart || isEnd || isTagged);
 
-    final Color bgColor = isOutsideSelection ? baseColor.withOpacity(0.5) : baseColor;
-    final Color finalTextColor = isOutsideSelection ? textColor.withOpacity(0.5) : textColor;
+    final Color bgColor = isOutsideSelection
+        ? baseColor.withValues(alpha: 0.5)
+        : baseColor;
+
+    final Color finalTextColor = isOutsideSelection
+        ? textColor.withValues(alpha: 0.5)
+        : textColor;
+
     final Color borderColor = isOutsideSelection
-        ? const Color(0xFF8BA3C9).withOpacity(0.5)
+        ? const Color(0xFF8BA3C9).withValues(alpha: 0.5)
         : const Color(0xFF8BA3C9);
 
     // 🕒 Nội dung hiển thị
