@@ -142,7 +142,7 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
   Widget build(BuildContext context) {
     final rawStartX = _minutesToViewportX(_startMin);
     final rawEndX = _minutesToViewportX(_endMin);
-    final selectorWidth = (rawEndX - rawStartX).clamp(0.0, double.infinity) as double;
+    final selectorWidth = (rawEndX - rawStartX).clamp(0.0, double.infinity);
 
     return Padding(
       padding: MediaQuery.of(context).padding, // 👈 thay SafeArea bằng Padding

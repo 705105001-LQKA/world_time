@@ -4,17 +4,17 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../../../domain/entities/city_time.dart';
 import '../../controllers/time_controller.dart';
-import 'header_row.dart';
-import 'timeline_row.dart';
+import 'header_row_basic.dart';
+import 'timeline_row_basic.dart';
 
-class CityTimeRow extends StatelessWidget {
+class CityTimeRowBasic extends StatelessWidget {
   final CityTime cityTime;
   final DateTime utcNow;
   final tz.TZDateTime hcmStart;
   final ScrollController scrollController;
   final VoidCallback onHomeChanged;
 
-  const CityTimeRow({
+  const CityTimeRowBasic({
     super.key,
     required this.cityTime,
     required this.utcNow,
@@ -39,7 +39,7 @@ class CityTimeRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          HeaderRow(
+          HeaderRowBasic(
               cityTime: cityTime,
               utcNow: utcNow,
               location: location,
@@ -53,7 +53,7 @@ class CityTimeRow extends StatelessWidget {
             final selEnd = controller.selectedEndUtc.value;
             final selectedDateUtc = controller.selectedDate.value;
 
-            return TimelineRow(
+            return TimelineRowBasic(
               hcmStart: startOfDay,
               location: location,
               utcNow: utcNow,
