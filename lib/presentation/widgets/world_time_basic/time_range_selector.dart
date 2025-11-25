@@ -9,7 +9,8 @@ class TimeRangeSelector extends StatefulWidget {
   final double verticalPadding;
 
   final double Function() currentHorizontalOffsetPx;
-  final tz.TZDateTime nowLocal;
+  final DateTime nowUtc; // 👈 nguồn thời gian từ controller.utcNow.value
+  final tz.Location timelineLocation; // 👈 timezone của timeline (ví dụ Asia/Ho_Chi_Minh)
 
   final ScrollController scrollController;
   final void Function(int startMinutes, int endMinutes)? onRangeChanged;
@@ -21,7 +22,8 @@ class TimeRangeSelector extends StatefulWidget {
     required this.hourWidth,
     required this.currentHorizontalOffsetPx,
     required this.scrollController,
-    required this.nowLocal,
+    required this.nowUtc,
+    required this.timelineLocation,
     required this.resetCounter,
     this.horizontalPadding = 0.0,
     this.verticalPadding = 0.0,
@@ -58,14 +60,27 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
   @override
   void didUpdateWidget(TimeRangeSelector oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    // reset khi resetCounter thay đổi
     if (widget.resetCounter != oldWidget.resetCounter) {
+      _resetToNow();
+      setState(() {});
+    }
+
+    // reset khi giờ local (theo timelineLocation) thay đổi
+    final oldLocalHour = tz.TZDateTime.from(oldWidget.nowUtc, widget.timelineLocation).hour;
+    final newLocalHour = tz.TZDateTime.from(widget.nowUtc, widget.timelineLocation).hour;
+    if (newLocalHour != oldLocalHour) {
       _resetToNow();
       setState(() {});
     }
   }
 
   void _resetToNow() {
-    final curHour = widget.nowLocal.hour;
+    // Quy đổi từ UTC sang local theo timelineLocation
+    final localNow = tz.TZDateTime.from(widget.nowUtc, widget.timelineLocation);
+    final curHour = localNow.hour;
+
     _startMin = curHour * 60;
     _endMin = (_startMin + widget.minWidthMinutes.toInt()).clamp(0, 1440);
   }
@@ -145,7 +160,7 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
     final selectorWidth = (rawEndX - rawStartX).clamp(0.0, double.infinity);
 
     return Padding(
-      padding: MediaQuery.of(context).padding, // 👈 thay SafeArea bằng Padding
+      padding: MediaQuery.of(context).padding,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final viewportWidth = constraints.maxWidth;
@@ -164,7 +179,7 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
           }
 
           return Stack(
-            clipBehavior: Clip.hardEdge, // 👈 đảm bảo không tràn ra ngoài
+            clipBehavior: Clip.hardEdge,
             children: [
               Positioned(
                 top: widget.verticalPadding,

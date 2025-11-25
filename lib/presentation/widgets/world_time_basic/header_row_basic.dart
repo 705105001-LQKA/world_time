@@ -156,8 +156,19 @@ class HeaderRowBasic extends StatelessWidget {
           tooltip: 'Đặt làm mặc định',
           padding: EdgeInsets.zero,
           onPressed: () {
+            // Đặt city mặc định
             controller.setDefaultCity(cityTime.cityName);
-            onHomeChanged(); // Gọi lại setState từ HomePage
+
+            // Xóa selection
+            controller.selectedStartUtc.value = null;
+            controller.selectedEndUtc.value = null;
+            controller.selectedDate.value = null;
+
+            // Reset thanh chọn
+            controller.resetCounter.value++;
+
+            // Gọi lại setState từ HomePage
+            onHomeChanged();
           },
           iconSize: 24.0,
           constraints: const BoxConstraints(minWidth: 0, minHeight: 0, maxWidth: 24, maxHeight: 24),

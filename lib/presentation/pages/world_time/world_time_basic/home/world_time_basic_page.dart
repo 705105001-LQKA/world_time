@@ -176,29 +176,25 @@ class _WorldTimeBasicPageState extends State<WorldTimeBasicPage> {
 
                     // Overlay gắn với scroll ngang của home city
                     TimeRangeSelector(
-                      hourWidth: 62.0,             // khớp với cell width (60 + margin 2)
+                      hourWidth: 62.0,
                       horizontalPadding: 16.0,
                       verticalPadding: 0.0,
-                      scrollController: homeRowController, // 👈 controller ngang
+                      scrollController: homeRowController,
                       currentHorizontalOffsetPx: _currentHorizontalOffsetPx,
-                      nowLocal: nowInDefault,
-                      resetCounter: tc.resetCounter.value, // 👈 thêm dòng này
+                      nowUtc: tc.utcNow.value,                 // thời gian nguồn từ controller
+                      timelineLocation: defaultLocation,
+                      resetCounter: tc.resetCounter.value,
                       onRangeChanged: (startMin, endMin) {
                         final baseDateLocal = tz.TZDateTime(
                           defaultLocation,
-                          baseDate.year,
-                          baseDate.month,
-                          baseDate.day,
-                          0,
+                          baseDate.year, baseDate.month, baseDate.day, 0,
                         );
-
                         final startLocal = baseDateLocal.add(Duration(minutes: startMin));
-                        final endLocal = baseDateLocal.add(Duration(minutes: endMin));
-
+                        final endLocal   = baseDateLocal.add(Duration(minutes: endMin));
                         tc.selectedStartUtc.value = startLocal.toUtc();
-                        tc.selectedEndUtc.value = endLocal.toUtc();
+                        tc.selectedEndUtc.value   = endLocal.toUtc();
                       },
-                    ),
+                    )
                   ],
                 );
               }),
