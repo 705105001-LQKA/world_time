@@ -24,7 +24,7 @@ class _WorldTimeBasicPageState extends State<WorldTimeBasicPage> {
   final ScrollController listScrollController = ScrollController();
   final WorldTimeBasicRowScrollSync _scrollSync = WorldTimeBasicRowScrollSync();
 
-  static const int _kMaxCities = 15;
+  static const int _kMaxCities = 10;
   Timer? _minuteTimer;
 
   @override
@@ -176,14 +176,16 @@ class _WorldTimeBasicPageState extends State<WorldTimeBasicPage> {
 
                     // Overlay gắn với scroll ngang của home city
                     TimeRangeSelector(
-                      hourWidth: 62.0,
-                      horizontalPadding: 16.0,
+                      hourWidth: 50.0,
+                      horizontalPadding: 17.0,
                       verticalPadding: 0.0,
                       scrollController: homeRowController,
                       currentHorizontalOffsetPx: _currentHorizontalOffsetPx,
                       nowUtc: tc.utcNow.value,                 // thời gian nguồn từ controller
                       timelineLocation: defaultLocation,
                       resetCounter: tc.resetCounter.value,
+                      selectedStartUtc: tc.selectedStartUtc.value,
+                      selectedEndUtc: tc.selectedEndUtc.value,
                       onRangeChanged: (startMin, endMin) {
                         final baseDateLocal = tz.TZDateTime(
                           defaultLocation,

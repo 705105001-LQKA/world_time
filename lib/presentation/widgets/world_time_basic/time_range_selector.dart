@@ -9,13 +9,16 @@ class TimeRangeSelector extends StatefulWidget {
   final double verticalPadding;
 
   final double Function() currentHorizontalOffsetPx;
-  final DateTime nowUtc; // 👈 nguồn thời gian từ controller.utcNow.value
-  final tz.Location timelineLocation; // 👈 timezone của timeline (ví dụ Asia/Ho_Chi_Minh)
+  final DateTime nowUtc;
+  final tz.Location timelineLocation;
 
   final ScrollController scrollController;
   final void Function(int startMinutes, int endMinutes)? onRangeChanged;
 
   final int resetCounter;
+
+  final DateTime? selectedStartUtc;
+  final DateTime? selectedEndUtc;
 
   const TimeRangeSelector({
     super.key,
@@ -29,6 +32,8 @@ class TimeRangeSelector extends StatefulWidget {
     this.verticalPadding = 0.0,
     this.minWidthMinutes = 60.0,
     this.onRangeChanged,
+    this.selectedStartUtc,
+    this.selectedEndUtc,
   });
 
   @override
@@ -61,13 +66,24 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
   void didUpdateWidget(TimeRangeSelector oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // reset khi resetCounter thay đổi
+    // 👇 nếu selection thay đổi thì cập nhật thanh chọn
+    if (widget.selectedStartUtc != oldWidget.selectedStartUtc ||
+        widget.selectedEndUtc != oldWidget.selectedEndUtc) {
+      if (widget.selectedStartUtc != null && widget.selectedEndUtc != null) {
+        final localStart = tz.TZDateTime.from(widget.selectedStartUtc!, widget.timelineLocation);
+        final localEnd   = tz.TZDateTime.from(widget.selectedEndUtc!, widget.timelineLocation);
+        setState(() {
+          _startMin = localStart.hour * 60 + localStart.minute;
+          _endMin   = localEnd.hour * 60 + localEnd.minute;
+        });
+      }
+    }
+
     if (widget.resetCounter != oldWidget.resetCounter) {
       _resetToNow();
       setState(() {});
     }
 
-    // reset khi giờ local (theo timelineLocation) thay đổi
     final oldLocalHour = tz.TZDateTime.from(oldWidget.nowUtc, widget.timelineLocation).hour;
     final newLocalHour = tz.TZDateTime.from(widget.nowUtc, widget.timelineLocation).hour;
     if (newLocalHour != oldLocalHour) {
@@ -77,10 +93,8 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
   }
 
   void _resetToNow() {
-    // Quy đổi từ UTC sang local theo timelineLocation
     final localNow = tz.TZDateTime.from(widget.nowUtc, widget.timelineLocation);
     final curHour = localNow.hour;
-
     _startMin = curHour * 60;
     _endMin = (_startMin + widget.minWidthMinutes.toInt()).clamp(0, 1440);
   }
@@ -116,7 +130,7 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
       final scroll = widget.scrollController;
       if (!scroll.hasClients) return;
 
-      double newOffset = scroll.offset + (_autoScrollToRight ? _autoScrollStepPx : -_autoScrollStepPx);
+      final newOffset = scroll.offset + (_autoScrollToRight ? _autoScrollStepPx : -_autoScrollStepPx);
 
       if (newOffset <= 0 || newOffset >= scroll.position.maxScrollExtent) {
         _stopAutoScroll();
@@ -130,19 +144,11 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
         if (_dragging == _DragHandle.left) {
           final proposedStart = (_startMin + deltaMin)
               .clamp(0, _endMin - widget.minWidthMinutes.toInt());
-          final startX = _minutesToViewportX(proposedStart);
-
-          if (startX >= 0) {
-            _startMin = proposedStart;
-          }
+          _startMin = proposedStart;
         } else if (_dragging == _DragHandle.right) {
           final proposedEnd = (_endMin + deltaMin)
               .clamp(_startMin + widget.minWidthMinutes.toInt(), 1440);
-          final endX = _minutesToViewportX(proposedEnd);
-
-          if (endX <= context.size!.width) {
-            _endMin = proposedEnd;
-          }
+          _endMin = proposedEnd;
         }
       });
     });
@@ -159,28 +165,49 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
     final rawEndX = _minutesToViewportX(_endMin);
     final selectorWidth = (rawEndX - rawStartX).clamp(0.0, double.infinity);
 
+    // Tay nắm: hiển thị nhỏ, vùng chạm rộng
+    const double handleVisualW = 18;
+    const double handleVisualH = 44;
+    const double handleTouchW = 18;
+    const double edgeThreshold = 80.0; // nới rộng để auto-scroll nhạy hơn
+
     return Padding(
       padding: MediaQuery.of(context).padding,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final viewportWidth = constraints.maxWidth;
 
-          if (rawEndX < 0 || rawStartX > viewportWidth) {
-            return const SizedBox.shrink();
+          // ✅ In log để debug
+          if (widget.scrollController.hasClients) {
+            debugPrint(
+              'TimeRangeSelector → rawStartX=$rawStartX rawEndX=$rawEndX viewport=$viewportWidth offset=${widget.scrollController.offset}',
+            );
+          } else {
+            debugPrint('TimeRangeSelector → scrollController chưa có client');
           }
 
-          const edgeThreshold = 60.0;
+          // ✅ Không còn return SizedBox.shrink() nữa
+          // Luôn vẽ thanh chọn, kể cả khi nằm ngoài viewport
 
-          bool _isNearLeftEdge() => rawStartX <= edgeThreshold && widget.scrollController.offset > 0;
-          bool _isNearRightEdge() {
-            final canScrollRight = widget.scrollController.hasClients &&
-                widget.scrollController.offset < widget.scrollController.position.maxScrollExtent;
-            return rawEndX >= viewportWidth - edgeThreshold && canScrollRight;
-          }
+
+          // if (rawEndX < 0 || rawStartX > viewportWidth) {
+          //   return const SizedBox.shrink();
+          // }
+
+          final hasClients = widget.scrollController.hasClients;
+          final offset = hasClients ? widget.scrollController.offset : 0.0;
+          final maxExtent = hasClients ? widget.scrollController.position.maxScrollExtent : 0.0;
+
+          bool _canScrollLeft() => hasClients && offset > 0.0;
+          bool _canScrollRight() => hasClients && offset < maxExtent;
+
+          bool _isNearLeftEdge() => rawStartX <= edgeThreshold && _canScrollLeft();
+          bool _isNearRightEdge() => rawEndX >= viewportWidth - edgeThreshold && _canScrollRight();
 
           return Stack(
             clipBehavior: Clip.hardEdge,
             children: [
+              // Khung chọn chính
               Positioned(
                 top: widget.verticalPadding,
                 bottom: widget.verticalPadding,
@@ -189,29 +216,26 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
                 child: Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.green, width: 2),
-                    color: Colors.black.withValues(alpha: 0.04),
+                    color: Colors.black.withOpacity(0.04),
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
 
-              // Tay nắm trái
+              // Tay nắm trái: vùng chạm rộng, UI nhỏ giữa cạnh trái
               Positioned(
+                left: rawStartX - handleTouchW / 2,
                 top: widget.verticalPadding,
                 bottom: widget.verticalPadding,
-                left: rawStartX - 10,
-                width: 20,
+                width: handleTouchW,
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
-                  onHorizontalDragStart: (_) {
-                    _dragging = _DragHandle.left;
-                  },
+                  onHorizontalDragStart: (_) => _dragging = _DragHandle.left,
                   onHorizontalDragUpdate: (details) {
                     final deltaMin = _pxDeltaToMinutes(details.delta.dx);
                     final proposedStartMin = (_startMin + deltaMin)
                         .clamp(0, _endMin - widget.minWidthMinutes.toInt());
                     final proposedStartX = _minutesToViewportX(proposedStartMin);
-
                     if (proposedStartX >= 0) {
                       setState(() => _startMin = proposedStartMin);
                     }
@@ -230,24 +254,31 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
                     setState(() => _startMin = _snapMinutes(_startMin));
                     _emitRange();
                   },
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.resizeLeftRight,
-                    child: Container(color: Colors.transparent),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      width: handleVisualW,
+                      height: handleVisualH,
+                      decoration: BoxDecoration(
+                        color: Color(0xFF698FC5),
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                      ),
+                      child: const Icon(Icons.chevron_left, color: Colors.white, size: 18),
+                    ),
                   ),
                 ),
               ),
 
-              // Tay nắm phải
+              // Tay nắm phải: vùng chạm rộng, UI nhỏ giữa cạnh phải
               Positioned(
+                left: rawEndX - handleTouchW / 2,
                 top: widget.verticalPadding,
                 bottom: widget.verticalPadding,
-                left: rawEndX - 10,
-                width: 20,
+                width: handleTouchW,
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
-                  onHorizontalDragStart: (_) {
-                    _dragging = _DragHandle.right;
-                  },
+                  onHorizontalDragStart: (_) => _dragging = _DragHandle.right,
                   onHorizontalDragUpdate: (details) {
                     final deltaMin = _pxDeltaToMinutes(details.delta.dx);
                     final proposedEndMin = (_endMin + deltaMin)
@@ -272,9 +303,18 @@ class _TimeRangeSelectorState extends State<TimeRangeSelector> {
                     setState(() => _endMin = _snapMinutes(_endMin));
                     _emitRange();
                   },
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.resizeLeftRight,
-                    child: Container(color: Colors.transparent),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Container(
+                      width: handleVisualW,
+                      height: handleVisualH,
+                      decoration: BoxDecoration(
+                        color: Color(0xFF698FC5),
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                      ),
+                      child: const Icon(Icons.chevron_right, color: Colors.white, size: 18),
+                    ),
                   ),
                 ),
               ),

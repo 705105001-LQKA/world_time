@@ -61,7 +61,7 @@ class _WorldTimeBasicCitySearchPageState extends State<WorldTimeBasicCitySearchP
   @override
   Widget build(BuildContext context) {
     // max consistent with controller.addCity
-    const int maxCities = 15;
+    const int maxCities = 10;
 
     return SafeArea(
       child: GestureDetector(
@@ -170,7 +170,7 @@ class _WorldTimeBasicCitySearchPageState extends State<WorldTimeBasicCitySearchP
                                 return;
                               }
 
-                              controller.addCity(city, tzValue);
+                              controller.addCityBasic(city, tzValue);
                               debugPrint('➕ Added city: $city with timezone: $tzValue');
                               controller.updateTimes();
                               Get.back();

@@ -48,36 +48,19 @@ class TimelineRowBasic extends StatelessWidget {
         selEnd: selEnd,
         selectedDateUtc: selectedDateUtc,
         onDoubleTap: () {
-          DateTime newStart;
-          DateTime newEnd;
-          final curStart = controller.selectedStartUtc.value;
-          final curEnd = controller.selectedEndUtc.value;
+          controller.selectedStartUtc.value = utcStart;
+          controller.selectedEndUtc.value   = utcEnd;
+          controller.selectedDate.value     = utcStart;
 
-          if (curStart == null && curEnd == null) {
-            newStart = utcStart;
-            newEnd = utcEnd;
-          } else {
-            DateTime s = curStart!;
-            DateTime e = curEnd!;
-            if (e.isBefore(s)) {
-              final tmp = s;
-              s = e;
-              e = tmp;
-            }
-            newStart = s;
-            newEnd = utcEnd;
-            if (newEnd.isBefore(newStart)) {
-              DateTime swappedStart = newEnd;
-              DateTime swappedEnd = newStart;
-              swappedStart = swappedStart.subtract(const Duration(hours: 1));
-              swappedEnd = swappedEnd.add(const Duration(hours: 1));
-              newStart = swappedStart;
-              newEnd = swappedEnd;
-            }
-          }
+          // 👇 Tính offset dựa trên giờ
+          const hourWidth = 50.0; // phải khớp với hourWidth bạn set trong TimeRangeSelector
+          final offset = utcStart.hour * hourWidth;
 
-          controller.selectedStartUtc.value = newStart;
-          controller.selectedEndUtc.value = newEnd;
+          scrollController.animateTo(
+            offset,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
         },
       ));
     }
@@ -85,7 +68,10 @@ class TimelineRowBasic extends StatelessWidget {
     return SingleChildScrollView(
       controller: scrollController,
       scrollDirection: Axis.horizontal,
-      child: Row(children: children),
+      child: SizedBox(
+        height: 48, // 👈 ép row cao hơn để tránh bị constraint 43px
+        child: Row(children: children),
+      ),
     );
   }
 }

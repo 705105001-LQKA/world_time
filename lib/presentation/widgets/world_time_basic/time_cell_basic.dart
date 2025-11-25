@@ -54,7 +54,6 @@ class TimeCellBasic extends StatelessWidget {
     final bool isCurrent = localNow.isAfter(localStart) && localNow.isBefore(localEnd);
     final bool isStart   = hasSelection && cellStartMs == sMs;
     final bool isEnd     = hasSelection && cellEndMs   == eMs;
-    // Ô thuộc khoảng nếu có overlap với [sMs, eMs)
     final bool isTagged  = hasSelection && (cellStartMs < eMs && cellEndMs > sMs);
 
     final bool isMidnight = localStart.hour == 0;
@@ -112,14 +111,14 @@ class TimeCellBasic extends StatelessWidget {
           Flexible(
             child: Text(
               DateFormat.E().format(displayDateTz).toUpperCase(),
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           Flexible(
             child: Text(
               DateFormat('dd MMM').format(displayDateTz),
-              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -127,39 +126,66 @@ class TimeCellBasic extends StatelessWidget {
       );
     } else {
       final hour = localStart.hour;
-      final display = hour == 0
-          ? '12 am'
-          : hour < 12
-          ? '$hour am'
-          : hour == 12
-          ? '12 pm'
-          : '${hour - 12} pm';
+      final hourNum = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+      final suffix = hour < 12 ? 'am' : 'pm';
 
-      content = Text(
-        display,
-        style: TextStyle(fontSize: 14, color: finalTextColor, fontWeight: FontWeight.bold),
+      content = Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text('$hourNum',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: finalTextColor)),
+          ),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(suffix,
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: finalTextColor)),
+          ),
+        ],
       );
     }
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      width: 60,
-      height: 50,
-      alignment: Alignment.center,
-      margin: const EdgeInsets.symmetric(horizontal: 1),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: borderColor,
-          width: 1.5,
+    // 👇 Bọc GestureDetector để lắng nghe double-tap
+    return GestureDetector(
+      onDoubleTap: onDoubleTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        width: 50,
+        height: 48,
+        alignment: Alignment.center,
+        margin: EdgeInsets.only(left: isMidnight ? 1 : 0),
+        decoration: BoxDecoration(
+          color: bgColor,
+          border: Border(
+            top: BorderSide(color: borderColor, width: 1.5),
+            bottom: BorderSide(color: borderColor, width: 1.5),
+            left: isMidnight
+                ? BorderSide(color: borderColor, width: 1.5)
+                : BorderSide.none,
+            right: localStart.hour == 23
+                ? BorderSide(color: borderColor, width: 1.5)
+                : BorderSide.none,
+          ),
+          borderRadius: isMidnight
+              ? const BorderRadius.only(
+            topLeft: Radius.circular(6),
+            bottomLeft: Radius.circular(6),
+          )
+              : localStart.hour == 23
+              ? const BorderRadius.only(
+            topRight: Radius.circular(6),
+            bottomRight: Radius.circular(6),
+          )
+              : BorderRadius.zero,
+          boxShadow: isCurrent
+              ? [BoxShadow(color: Colors.black26, blurRadius: 4, offset: const Offset(0, 1))]
+              : null,
         ),
-        boxShadow: isCurrent
-            ? [BoxShadow(color: Colors.black26, blurRadius: 4, offset: const Offset(0, 1))]
-            : null,
+        child: content,
       ),
-      child: content,
     );
   }
 }

@@ -40,14 +40,14 @@ class CityTimeRowBasic extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           HeaderRowBasic(
-              cityTime: cityTime,
-              utcNow: utcNow,
-              location: location,
-              onHomeChanged: onHomeChanged,
+            cityTime: cityTime,
+            utcNow: utcNow,
+            location: location,
+            onHomeChanged: onHomeChanged,
           ),
           const SizedBox(height: 8),
 
-          // Obx đọc observable và truyền giá trị thuần xuống TimelineRow
+          // Obx đọc observable và truyền giá trị xuống TimelineRowBasic
           Obx(() {
             final selStart = controller.selectedStartUtc.value;
             final selEnd = controller.selectedEndUtc.value;

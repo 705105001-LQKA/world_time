@@ -54,6 +54,45 @@ class TimeController extends GetxController {
     selectedDate.value = null;
   }
 
+  void addCityBasic(String cityName, String timezone) {
+    const int maxCities = 10;
+
+    if (cityTimes.length >= maxCities) {
+      Get.snackbar(
+        'Giới hạn thành phố',
+        'Bạn chỉ có thể lưu tối đa $maxCities thành phố.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.black87,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    final exists = cityTimes.any((c) =>
+    c.cityName.toLowerCase() == cityName.toLowerCase() || c.timezone == timezone);
+    if (exists) {
+      Get.snackbar(
+        'Đã có trong danh sách',
+        'Thành phố này đã có trong danh sách.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.black87,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    final location = tz.getLocation(timezone);
+    final now = tz.TZDateTime.now(location);
+    final cityTime = CityTime(cityName: cityName, timezone: timezone, time: now);
+
+    cityTimes.add(cityTime);
+    saveCities();
+
+    if (cityTimes.length == 1) {
+      setDefaultCity(cityTime.cityName);
+    }
+  }
+
   // --- existing city/time methods ---
   void addCity(String cityName, String timezone) {
     const int maxCities = 15;
