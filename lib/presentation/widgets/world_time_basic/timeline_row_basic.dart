@@ -4,7 +4,7 @@ import '../../controllers/time_controller.dart';
 import 'time_cell_basic.dart';
 import 'package:get/get.dart';
 
-class TimelineRowBasic extends StatelessWidget {
+class TimelineRowBasic extends StatefulWidget {
   final tz.TZDateTime hcmStart;
   final tz.Location location;
   final DateTime utcNow;
@@ -27,13 +27,24 @@ class TimelineRowBasic extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final controller = Get.find<TimeController>();
+  State<TimelineRowBasic> createState() => _TimelineRowBasicState();
+}
 
+class _TimelineRowBasicState extends State<TimelineRowBasic>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true; // 👈 giữ widget này sống khi cuộn ra khỏi viewport
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context); // 👈 bắt buộc khi dùng mixin
+
+    final controller = Get.find<TimeController>();
     final children = <Widget>[];
+
     for (int i = 0; i < 24; i++) {
-      final utcBase = hcmStart.toUtc();
-      final localBase = tz.TZDateTime.from(utcBase, location);
+      final utcBase = widget.hcmStart.toUtc();
+      final localBase = tz.TZDateTime.from(utcBase, widget.location);
 
       final localStart = localBase.add(Duration(hours: i));
       final utcStart = localStart.toUtc();
@@ -42,34 +53,24 @@ class TimelineRowBasic extends StatelessWidget {
       children.add(TimeCellBasic(
         utcStart: utcStart,
         utcEnd: utcEnd,
-        location: location,
-        utcNow: utcNow,
-        selStart: selStart,
-        selEnd: selEnd,
-        selectedDateUtc: selectedDateUtc,
+        location: widget.location,
+        utcNow: widget.utcNow,
+        selStart: widget.selStart,
+        selEnd: widget.selEnd,
+        selectedDateUtc: widget.selectedDateUtc,
         onDoubleTap: () {
           controller.selectedStartUtc.value = utcStart;
           controller.selectedEndUtc.value   = utcEnd;
           controller.selectedDate.value     = utcStart;
-
-          // 👇 Tính offset dựa trên giờ
-          const hourWidth = 50.0; // phải khớp với hourWidth bạn set trong TimeRangeSelector
-          final offset = utcStart.hour * hourWidth;
-
-          scrollController.animateTo(
-            offset,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
         },
       ));
     }
 
     return SingleChildScrollView(
-      controller: scrollController,
+      controller: widget.scrollController,
       scrollDirection: Axis.horizontal,
       child: SizedBox(
-        height: 48, // 👈 ép row cao hơn để tránh bị constraint 43px
+        height: 52, // 👈 ép row cao hơn để tránh constraint
         child: Row(children: children),
       ),
     );
