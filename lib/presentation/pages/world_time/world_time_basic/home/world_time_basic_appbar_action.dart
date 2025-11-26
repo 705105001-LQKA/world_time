@@ -37,7 +37,18 @@ class WorldTimeBasicAppBarActions extends StatelessWidget {
     return Obx(() {
       final hasSelection = controller.selectedStartUtc.value != null ||
           controller.selectedEndUtc.value != null;
-      final hasDate = controller.selectedDate.value != null;
+
+      final selectedDate = controller.selectedDate.value;
+      final nowDateUtc = DateTime.utc(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+
+      // true nếu có ngày khác ngày hiện tại
+      final hasRealDate = selectedDate != null &&
+          !(selectedDate.year == nowDateUtc.year &&
+              selectedDate.month == nowDateUtc.month &&
+              selectedDate.day == nowDateUtc.day);
+
+      // điều kiện hiển thị thùng rác
+      final showTrash = hasRealDate || (selectedDate != null && !hasSelection);
 
       return Row(
         children: [
@@ -163,7 +174,7 @@ class WorldTimeBasicAppBarActions extends StatelessWidget {
             },
           ),
 
-          if (hasDate)
+          if (showTrash)
             IconButton(
               icon: const Icon(Icons.delete_forever),
               tooltip: 'Xóa ngày đã chọn',

@@ -145,6 +145,8 @@ class TimeController extends GetxController {
         storage.remove('defaultCityId');
       }
     }
+
+    resetCounter.value++;
   }
 
   void updateTimes() {
