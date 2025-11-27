@@ -5,8 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../../../widgets/world_time_basic/city_time_row_basic.dart';
+import '../../../../widgets/world_time_basic/time_range_handles.dart';
 import '../../../../widgets/world_time_basic/time_range_selector.dart';
 import '../../../../controllers/time_controller.dart';
+import '../../../../widgets/world_time_basic/time_range_selector_box.dart';
+import '../../../../widgets/world_time_basic/time_range_overlay.dart';
 import 'world_time_basic_appbar_action.dart';
 import '../city_search/world_time_basic_row_scroll_sync.dart';
 
@@ -32,19 +35,7 @@ class _WorldTimeBasicPageState extends State<WorldTimeBasicPage> {
     super.initState();
     SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeRight]);
 
-    final now = DateTime.now();
-    final nextTick = DateTime(now.year, now.month, now.day, now.hour, now.minute)
-        .add(const Duration(minutes: 1));
-    final initialDelay = nextTick.difference(now);
-
-    Future.delayed(initialDelay, () {
-      controller.updateTimes();
-      if (mounted) setState(() {});
-      _minuteTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-        controller.updateTimes();
-        if (mounted) setState(() {});
-      });
-    });
+    controller.updateTimes();
   }
 
   @override
@@ -94,8 +85,13 @@ class _WorldTimeBasicPageState extends State<WorldTimeBasicPage> {
         ? tz.getLocation(defaultCity.timezone)
         : tz.getLocation('Asia/Ho_Chi_Minh');
 
-    final nowInDefault = tz.TZDateTime.now(defaultLocation);
+    // Lấy thời điểm UTC từ controller (reactive). Nếu null thì fallback về DateTime.now()
+    final utcNowDt = tc.utcNow.value ?? DateTime.now().toUtc();
 
+// Chuyển UTC sang timezone của defaultLocation để có "now" theo location đó
+    final nowInDefault = tz.TZDateTime.from(utcNowDt, defaultLocation);
+
+// Tính baseDate dựa trên nowInDefault như trước
     final selectedDateUtc = tc.selectedDate.value;
     final baseDate = selectedDateUtc ??
         DateTime.utc(nowInDefault.year, nowInDefault.month, nowInDefault.day);
@@ -137,7 +133,7 @@ class _WorldTimeBasicPageState extends State<WorldTimeBasicPage> {
 
                 _trimControllersForDisplayed(displayedIds);
 
-                // 👇 Clamp offset sau khi danh sách thay đổi
+                // Clamp offset sau khi danh sách thay đổi
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (listScrollController.hasClients) {
                     final pos = listScrollController.position;
@@ -151,9 +147,22 @@ class _WorldTimeBasicPageState extends State<WorldTimeBasicPage> {
 
                 // Lấy controller ngang của thành phố mặc định
                 final homeCityId = tc.defaultCityId.value;
+                final homeRowController = _ensureControllerFor(homeCityId);
                 _syncControllerIfNeeded(homeCityId);
 
+                // Tính overlay kích thước và vị trí tay nắm
+                final count = displayed.length;
+                final overlayHeight = count == 0 ? 0 : 50 + (count - 1) * 102;
+                final double hourWidth = 50.0;
+                final double horizontalPadding = 17.0;
+                final double handleFixedHeight = 44.0;
+                final double handleFixedTop = (count <= 3)
+                    ? ((overlayHeight.toDouble() - handleFixedHeight) / 2.0)
+                    .clamp(0.0, overlayHeight.toDouble())
+                    : 54.0;
+
                 return Stack(
+                  clipBehavior: Clip.none,
                   children: [
                     // Danh sách thành phố
                     ReorderableListView.builder(
@@ -164,7 +173,8 @@ class _WorldTimeBasicPageState extends State<WorldTimeBasicPage> {
                         tc.reorderCity(oldIndex, newIndex);
                         setState(() {});
                       },
-                      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
+                      padding:
+                      const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
                       itemBuilder: (context, index) {
                         final city = displayed[index];
                         final cityId = city.cityName;
@@ -186,70 +196,27 @@ class _WorldTimeBasicPageState extends State<WorldTimeBasicPage> {
                     ),
 
                     // Overlay thanh chọn với chiều cao tùy theo số thành phố
-                    Builder(
-                      builder: (context) {
-                        final count = displayed.length;
-                        final overlayHeight = count == 0 ? 0 : 50 + (count - 1) * 102;
-
-                        if (overlayHeight <= 0) {
-                          return const SizedBox.shrink();
-                        }
-
-                        // Lấy controller ngang của thành phố mặc định
-                        final homeCityId = tc.defaultCityId.value;
-                        final homeRowController = _ensureControllerFor(homeCityId);
-                        _syncControllerIfNeeded(homeCityId);
-
-                        // 👇 Chỉ render selector khi controller đã attach
-                        if (!homeRowController.hasClients) {
-                          return const SizedBox.shrink();
-                        }
-
-                        return Positioned(
-                          left: 0,
-                          right: 0,
-                          top: 60,
-                          height: overlayHeight.toDouble(),
-                          child: AnimatedBuilder(
-                            animation: listScrollController,
-                            builder: (context, _) {
-                              final dy = -listScrollController.offset;
-                              return Transform.translate(
-                                offset: Offset(0, dy),
-                                child: SizedBox(
-                                  height: overlayHeight.toDouble(),
-                                  width: double.infinity,
-                                  child: Obx(() => TimeRangeSelector(
-                                    key: ValueKey('trs_$homeCityId'),
-                                    hourWidth: 50.0,
-                                    horizontalPadding: 17.0,
-                                    verticalPadding: 0.0,
-                                    scrollController: homeRowController,
-                                    currentHorizontalOffsetPx: _currentHorizontalOffsetPx,
-                                    nowUtc: tc.utcNow.value,
-                                    timelineLocation: defaultLocation,
-                                    resetCounter: tc.resetCounter.value,
-                                    selectedStartUtc: tc.selectedStartUtc.value,
-                                    selectedEndUtc: tc.selectedEndUtc.value,
-                                    onRangeChanged: (startMin, endMin) {
-                                      final baseDateLocal = tz.TZDateTime(
-                                        defaultLocation,
-                                        baseDate.year, baseDate.month, baseDate.day, 0,
-                                      );
-                                      final startLocal = baseDateLocal.add(Duration(minutes: startMin));
-                                      final endLocal   = baseDateLocal.add(Duration(minutes: endMin));
-                                      tc.selectedStartUtc.value = startLocal.toUtc();
-                                      tc.selectedEndUtc.value   = endLocal.toUtc();
-                                      setState(() {});
-                                    },
-                                  )),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
+                    if (overlayHeight > 0)
+                      TimeRangeOverlay(
+                        hourWidth: hourWidth,
+                        horizontalPadding: horizontalPadding,
+                        minWidthMinutes: 60.0,
+                        readSelectedStartUtc: () => tc.selectedStartUtc.value,
+                        readSelectedEndUtc: () => tc.selectedEndUtc.value,
+                        onRangeChangedUtc: (startUtc, endUtc) {
+                          tc.selectedStartUtc.value = startUtc;
+                          tc.selectedEndUtc.value = endUtc;
+                          setState(() {});
+                        },
+                        horizontalController: homeRowController,
+                        listScrollController: listScrollController,
+                        baseDateLocalDate: baseDate,
+                        timelineLocation: defaultLocation,
+                        overlayTop: 60.0,
+                        overlayHeight: overlayHeight.toDouble(),
+                        handleFixedTop: handleFixedTop,
+                        handleFixedHeight: handleFixedHeight,
+                      ),
                   ],
                 );
               }),

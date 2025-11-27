@@ -29,15 +29,14 @@ class TimeCellBasic extends StatelessWidget {
   Widget build(BuildContext context) {
     final localStart = tz.TZDateTime.from(utcStart, location);
     final localEnd = tz.TZDateTime.from(utcEnd, location);
-    final localNow = tz.TZDateTime.from(utcNow, location);
 
-    // --- Selection normalization ---
+    // --- Selection normalization (milliseconds UTC) ---
     final int? selStartMs = selStart?.toUtc().millisecondsSinceEpoch;
-    final int? selEndMs   = selEnd?.toUtc().millisecondsSinceEpoch;
+    final int? selEndMs = selEnd?.toUtc().millisecondsSinceEpoch;
 
-    // Cell boundaries
+    // Cell boundaries (UTC ms)
     final int cellStartMs = utcStart.toUtc().millisecondsSinceEpoch;
-    final int cellEndMs   = utcEnd.toUtc().millisecondsSinceEpoch;
+    final int cellEndMs = utcEnd.toUtc().millisecondsSinceEpoch;
 
     // Ensure selStart <= selEnd
     int? sMs = selStartMs;
@@ -50,11 +49,16 @@ class TimeCellBasic extends StatelessWidget {
 
     final bool hasSelection = sMs != null && eMs != null;
 
-    // Flags
-    final bool isCurrent = localNow.isAfter(localStart) && localNow.isBefore(localEnd);
-    final bool isStart   = hasSelection && cellStartMs == sMs;
-    final bool isEnd     = hasSelection && cellEndMs   == eMs;
-    final bool isTagged  = hasSelection && (cellStartMs < eMs && cellEndMs > sMs);
+    // Current time in UTC ms (single source)
+    final int nowUtcMs = utcNow.toUtc().millisecondsSinceEpoch;
+
+    // current nếu now ∈ [cellStart, cellEnd)
+    final bool isCurrent = nowUtcMs >= cellStartMs && nowUtcMs < cellEndMs;
+
+    // Selection flags using ms comparisons
+    final bool isStart = hasSelection && cellStartMs == sMs;
+    final bool isEnd = hasSelection && cellEndMs == eMs;
+    final bool isTagged = hasSelection && (cellStartMs < eMs && cellEndMs > sMs);
 
     final bool isMidnight = localStart.hour == 0;
 
@@ -102,9 +106,8 @@ class TimeCellBasic extends StatelessWidget {
     // 🕒 Nội dung hiển thị
     Widget content;
     if (isMidnight) {
-      final tz.TZDateTime displayDateTz = (selectedDateUtc != null)
-          ? tz.TZDateTime.from(selectedDateUtc!, location)
-          : localStart;
+      // Luôn hiển thị ngày thực tế của ô (dựa trên utcStart -> localStart).
+      final tz.TZDateTime displayDateTz = localStart;
       content = Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

@@ -32,9 +32,18 @@ class TimeController extends GetxController {
     loadCities();
     updateTimes();
 
-    // ✅ chỉ tạo 1 timer duy nhất trong controller
-    _minuteTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+    // Align to next minute, then start periodic every 1 minute
+    final now = DateTime.now();
+    final nextTick = DateTime(now.year, now.month, now.day, now.hour, now.minute)
+        .add(const Duration(minutes: 1));
+    final initialDelay = nextTick.difference(now);
+
+    // One-shot to align, then periodic
+    Timer(initialDelay, () {
       updateTimes();
+      _minuteTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+        updateTimes();
+      });
     });
   }
 
@@ -154,6 +163,7 @@ class TimeController extends GetxController {
     utcNow.value = now.toUtc();
 
     debugPrint('⏱ updateTimes() called at: $now');
+    debugPrintStack(label: 'stack trace for updateTimes', maxFrames: 10);
 
     final updated = cityTimes.map((ct) {
       final location = tz.getLocation(ct.timezone);

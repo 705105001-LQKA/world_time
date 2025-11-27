@@ -37,20 +37,7 @@ class _WorldTimeMulticoloredPageState extends State<WorldTimeMulticoloredPage> {
       DeviceOrientation.landscapeRight,
     ]);
 
-    final now = DateTime.now();
-    final nextTick = DateTime(now.year, now.month, now.day, now.hour, now.minute)
-        .add(const Duration(minutes: 1));
-    final initialDelay = nextTick.difference(now);
-
-    Future.delayed(initialDelay, () {
-      controller.updateTimes();
-      if (mounted) setState(() {});
-
-      _minuteTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-        controller.updateTimes();
-        if (mounted) setState(() {});
-      });
-    });
+    controller.updateTimes();
   }
 
   @override

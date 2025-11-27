@@ -59,9 +59,13 @@ class _TimelineRowBasicState extends State<TimelineRowBasic>
         selEnd: widget.selEnd,
         selectedDateUtc: widget.selectedDateUtc,
         onDoubleTap: () {
-          controller.selectedStartUtc.value = utcStart;
-          controller.selectedEndUtc.value   = utcEnd;
-          controller.selectedDate.value     = utcStart;
+          // Lưu instants (UTC)
+          controller.selectedStartUtc.value = utcStart.toUtc();
+          controller.selectedEndUtc.value   = utcEnd.toUtc();
+
+          // Lưu selectedDate dưới dạng UTC midnight của ngày localStart
+          final localStart = tz.TZDateTime.from(utcStart.toUtc(), widget.location);
+          controller.selectedDate.value = DateTime.utc(localStart.year, localStart.month, localStart.day);
         },
       ));
     }

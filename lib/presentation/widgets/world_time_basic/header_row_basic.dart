@@ -70,12 +70,15 @@ class HeaderRowBasic extends StatelessWidget {
                   final end = controller.selectedEndUtc.value;
                   final selectedDateUtc = controller.selectedDate.value;
 
+                  // Lấy utcNow reactive từ controller (nguồn duy nhất)
+                  final nowUtc = controller.utcNow.value ?? DateTime.now().toUtc();
+                  final localNow = tz.TZDateTime.from(nowUtc.toUtc(), location);
+
                   // If there is a start/end selection, show the range in city's local tz
                   if (start != null && end != null) {
-                    final localStart = tz.TZDateTime.from(start, location);
-                    final localEnd = tz.TZDateTime.from(end, location);
+                    final localStart = tz.TZDateTime.from(start.toUtc(), location);
+                    final localEnd = tz.TZDateTime.from(end.toUtc(), location);
 
-                    // ensure we compute positive duration between normalized boundaries
                     DateTime s = start;
                     DateTime e = end;
                     if (e.isBefore(s)) {
@@ -89,6 +92,8 @@ class HeaderRowBasic extends StatelessWidget {
                         '${DateFormat('HH:mm E dd/MM').format(localStart)} → ${DateFormat('HH:mm E dd/MM').format(localEnd)}';
                     final durationLabel = ' (${_formatDuration(duration)})';
 
+                    // debugPrint('HeaderRow: start=$start end=$end selectedDate=${controller.selectedDate.value}');
+
                     return Text(
                       '$rangeLabel$durationLabel',
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
@@ -98,7 +103,7 @@ class HeaderRowBasic extends StatelessWidget {
 
                   // If user selected a calendar date, show weekday + date (based on that date in city's tz)
                   if (selectedDateUtc != null) {
-                    final tzDate = tz.TZDateTime.from(selectedDateUtc, location);
+                    final tzDate = tz.TZDateTime.from(selectedDateUtc.toUtc(), location);
                     final label = '${DateFormat.E().format(tzDate)}, ${DateFormat('dd MMM yyyy').format(tzDate)}';
                     return Text(
                       label,
