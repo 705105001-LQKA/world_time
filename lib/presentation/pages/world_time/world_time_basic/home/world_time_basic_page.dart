@@ -5,10 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../../../widgets/world_time_basic/city_time_row_basic.dart';
-import '../../../../widgets/world_time_basic/time_range_handles.dart';
-import '../../../../widgets/world_time_basic/time_range_selector.dart';
 import '../../../../controllers/time_controller.dart';
-import '../../../../widgets/world_time_basic/time_range_selector_box.dart';
 import '../../../../widgets/world_time_basic/time_range_overlay.dart';
 import 'world_time_basic_appbar_action.dart';
 import '../city_search/world_time_basic_row_scroll_sync.dart';
@@ -70,10 +67,6 @@ class _WorldTimeBasicPageState extends State<WorldTimeBasicPage> {
     }
   }
 
-  double _currentHorizontalOffsetPx() {
-    return _scrollSync.currentOffsetPx();
-  }
-
   @override
   Widget build(BuildContext context) {
     final tc = Get.find<TimeController>();
@@ -86,12 +79,12 @@ class _WorldTimeBasicPageState extends State<WorldTimeBasicPage> {
         : tz.getLocation('Asia/Ho_Chi_Minh');
 
     // Lấy thời điểm UTC từ controller (reactive). Nếu null thì fallback về DateTime.now()
-    final utcNowDt = tc.utcNow.value ?? DateTime.now().toUtc();
+    final utcNowDt = tc.utcNow.value;
 
-// Chuyển UTC sang timezone của defaultLocation để có "now" theo location đó
+    // Chuyển UTC sang timezone của defaultLocation để có "now" theo location đó
     final nowInDefault = tz.TZDateTime.from(utcNowDt, defaultLocation);
 
-// Tính baseDate dựa trên nowInDefault như trước
+    // Tính baseDate dựa trên nowInDefault như trước
     final selectedDateUtc = tc.selectedDate.value;
     final baseDate = selectedDateUtc ??
         DateTime.utc(nowInDefault.year, nowInDefault.month, nowInDefault.day);

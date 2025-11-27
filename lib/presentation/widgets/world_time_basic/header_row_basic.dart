@@ -45,7 +45,6 @@ class HeaderRowBasic extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<TimeController>();
-    final localNow = tz.TZDateTime.from(utcNow, location);
 
     return Row(
       mainAxisSize: MainAxisSize.max,
@@ -71,7 +70,7 @@ class HeaderRowBasic extends StatelessWidget {
                   final selectedDateUtc = controller.selectedDate.value;
 
                   // Lấy utcNow reactive từ controller (nguồn duy nhất)
-                  final nowUtc = controller.utcNow.value ?? DateTime.now().toUtc();
+                  final nowUtc = controller.utcNow.value;
                   final localNow = tz.TZDateTime.from(nowUtc.toUtc(), location);
 
                   // If there is a start/end selection, show the range in city's local tz

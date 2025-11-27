@@ -28,7 +28,6 @@ class TimeCellBasic extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localStart = tz.TZDateTime.from(utcStart, location);
-    final localEnd = tz.TZDateTime.from(utcEnd, location);
 
     // --- Selection normalization (milliseconds UTC) ---
     final int? selStartMs = selStart?.toUtc().millisecondsSinceEpoch;
