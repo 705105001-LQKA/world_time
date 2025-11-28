@@ -30,7 +30,7 @@ class _WorldTimeBasicPageState extends State<WorldTimeBasicPage> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeRight]);
+    SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft]);
 
     controller.updateTimes();
   }

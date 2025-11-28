@@ -34,7 +34,7 @@ class _WorldTimeMulticoloredPageState extends State<WorldTimeMulticoloredPage> {
 
     // ✅ ép orientation sang ngang khi vào trang này
     SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
     ]);
 
     controller.updateTimes();
