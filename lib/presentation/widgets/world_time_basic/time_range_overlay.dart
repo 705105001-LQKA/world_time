@@ -254,15 +254,16 @@ class _TimeRangeOverlayState extends State<TimeRangeOverlay> {
     if (widget.overlayHeight <= 0) return const SizedBox.shrink();
 
     final List<Listenable> listenables = [];
-    listenables.add(widget.horizontalController);
+    listenables.add(widget.horizontalController); // rebuild khi timeline ngang cuộn
     if (widget.listScrollController != null) {
-      listenables.add(widget.listScrollController!);
+      listenables.add(widget.listScrollController!); // rebuild khi list dọc cuộn
     }
     listenables.add(_rangeNotifier);
-    final Listenable merged = Listenable.merge(listenables);
+    final merged = Listenable.merge(listenables);
 
     return Stack(
       children: [
+        // Box hiển thị vùng chọn
         Positioned(
           left: 0,
           right: 0,
@@ -288,7 +289,7 @@ class _TimeRangeOverlayState extends State<TimeRangeOverlay> {
                     hourWidth: widget.hourWidth,
                     horizontalPadding: widget.horizontalPadding,
                     verticalPadding: 0.0,
-                    currentHorizontalOffsetPx: _currentHorizontalOffsetPx,
+                    currentHorizontalOffsetPx: _currentHorizontalOffsetPx, // đọc offset từ horizontalController
                     startMin: currentStart,
                     endMin: currentEnd,
                   ),
@@ -298,24 +299,25 @@ class _TimeRangeOverlayState extends State<TimeRangeOverlay> {
           ),
         ),
 
+        // Handles để kéo
         Positioned(
           left: 0,
           right: 0,
           top: widget.overlayTop,
           height: widget.overlayHeight,
           child: AnimatedBuilder(
-            animation: widget.horizontalController,
+            animation: merged,
             builder: (context, _) {
               return TimeRangeHandles(
                 hourWidth: widget.hourWidth,
                 minWidthMinutes: widget.minWidthMinutes,
                 horizontalPadding: widget.horizontalPadding,
-                currentHorizontalOffsetPx: _currentHorizontalOffsetPx,
+                currentHorizontalOffsetPx: _currentHorizontalOffsetPx, // đọc offset từ horizontalController
                 startMin: _dragStartMin,
                 endMin: _dragEndMin,
                 fixedTop: widget.handleFixedTop,
                 fixedHeight: widget.handleFixedHeight,
-                horizontalController: widget.horizontalController,
+                horizontalController: widget.horizontalController, // dùng để auto-scroll khi kéo
                 onDragging: _onDragging,
                 onDragStart: _onDragStart,
                 onDragEnd: _onDragEnd,

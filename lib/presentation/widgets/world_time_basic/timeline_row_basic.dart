@@ -37,46 +37,46 @@ class _TimelineRowBasicState extends State<TimelineRowBasic>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // 👈 bắt buộc khi dùng mixin
-
+    super.build(context);
     final controller = Get.find<TimeController>();
-    final children = <Widget>[];
 
-    for (int i = 0; i < 24; i++) {
-      final utcBase = widget.hcmStart.toUtc();
-      final localBase = tz.TZDateTime.from(utcBase, widget.location);
+    return Obx(() {
+      final children = <Widget>[];
+      for (int i = 0; i < 24; i++) {
+        final utcBase = widget.hcmStart.toUtc();
+        final localBase = tz.TZDateTime.from(utcBase, widget.location);
+        final localStart = localBase.add(Duration(hours: i));
+        final utcStart = localStart.toUtc();
+        final utcEnd = utcStart.add(const Duration(hours: 1));
 
-      final localStart = localBase.add(Duration(hours: i));
-      final utcStart = localStart.toUtc();
-      final utcEnd = utcStart.add(const Duration(hours: 1));
+        children.add(TimeCellBasic(
+          utcStart: utcStart,
+          utcEnd: utcEnd,
+          location: widget.location,
+          utcNow: controller.utcNow.value, // 👈 luôn cập nhật
+          selStart: widget.selStart,
+          selEnd: widget.selEnd,
+          selectedDateUtc: widget.selectedDateUtc,
+          onDoubleTap: () {
+            // Lưu instants (UTC)
+            controller.selectedStartUtc.value = utcStart.toUtc();
+            controller.selectedEndUtc.value   = utcEnd.toUtc();
 
-      children.add(TimeCellBasic(
-        utcStart: utcStart,
-        utcEnd: utcEnd,
-        location: widget.location,
-        utcNow: widget.utcNow,
-        selStart: widget.selStart,
-        selEnd: widget.selEnd,
-        selectedDateUtc: widget.selectedDateUtc,
-        onDoubleTap: () {
-          // Lưu instants (UTC)
-          controller.selectedStartUtc.value = utcStart.toUtc();
-          controller.selectedEndUtc.value   = utcEnd.toUtc();
+            // Lưu selectedDate dưới dạng UTC midnight của ngày localStart
+            final localStart = tz.TZDateTime.from(utcStart.toUtc(), widget.location);
+            controller.selectedDate.value = DateTime.utc(localStart.year, localStart.month, localStart.day);
+          },
+        ));
+      }
 
-          // Lưu selectedDate dưới dạng UTC midnight của ngày localStart
-          final localStart = tz.TZDateTime.from(utcStart.toUtc(), widget.location);
-          controller.selectedDate.value = DateTime.utc(localStart.year, localStart.month, localStart.day);
-        },
-      ));
-    }
-
-    return SingleChildScrollView(
-      controller: widget.scrollController,
-      scrollDirection: Axis.horizontal,
-      child: SizedBox(
-        height: 52, // 👈 ép row cao hơn để tránh constraint
-        child: Row(children: children),
-      ),
-    );
+      return SingleChildScrollView(
+        controller: widget.scrollController,
+        scrollDirection: Axis.horizontal,
+        child: SizedBox(
+          height: 52,
+          child: Row(children: children),
+        ),
+      );
+    });
   }
 }
