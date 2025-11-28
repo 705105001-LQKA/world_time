@@ -1,6 +1,6 @@
 # 🌍 World Time
 
-# Giới thiệu
+## ℹ️ Giới thiệu
 
 Ứng dụng Flutter hiển thị múi giờ và chuyển đổi thời gian giữa các thành phố trên thế giới.
 
@@ -21,7 +21,7 @@
 - Git & GitHub để quản lý phiên bản
 - Các package: get, timezone, intl, flutter_launcher_icons
 
-## 📦 Cài đặt & chạy thử
+## ⚙️ Cài đặt & chạy thử
 Yêu cầu:
 - Flutter SDK
 - Android Studio hoặc VS Code
@@ -84,6 +84,7 @@ git push origin feature/your-feature-name
 5. Tạo Pull Request (PR)
 Vào GitHub, mở repo gốc, nhấn New Pull Request để gửi thay đổi của bạn.
 Mô tả rõ ràng tính năng hoặc lỗi bạn đã sửa để người duyệt dễ hiểu.
+
 📌 Lưu ý
 - Hãy đảm bảo code của bạn tuân thủ style guide của Flutter/Dart.
 - Viết commit message rõ ràng, ngắn gọn.
