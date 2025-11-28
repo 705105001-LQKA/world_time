@@ -22,13 +22,38 @@ class _WorldTimeBasicCitySearchPageState extends State<WorldTimeBasicCitySearchP
   final LayerLink _layerLink = LayerLink();
   final List<String> timezones = tz.timeZoneDatabase.locations.keys.toList()..sort();
 
+  /// Hàm tiện ích: trả về chuỗi UTC offset cho một timezone
+  String formatUtcOffset(String tzName) {
+    final location = tz.getLocation(tzName);
+    final offsetMs = location.currentTimeZone.offset; // milliseconds
+    final duration = Duration(seconds: offsetMs ~/ 1000); // đổi về giây
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final sign = offsetMs >= 0 ? '+' : '-';
+
+    return minutes == 0
+        ? 'UTC$sign${hours.abs()}'
+        : 'UTC$sign${hours.abs()}:${minutes.toString().padLeft(2, '0')}';
+  }
+
+  /// Lấy danh sách gợi ý theo tên hoặc theo UTC offset
   List<String> getSuggestions(String input) {
     final lower = input.toLowerCase();
-    final matches = timezones.where((tz) => tz.toLowerCase().contains(lower)).toList();
+    final matches = <String>[];
+
+    for (var tzName in timezones) {
+      final utcString = formatUtcOffset(tzName).toLowerCase();
+      if (tzName.toLowerCase().contains(lower) || utcString.contains(lower)) {
+        matches.add(tzName);
+      }
+    }
+
+    // heuristic cho Hanoi
     if ((lower.contains('hanoi') || lower.startsWith('ha_')) &&
         !matches.contains('Asia/Ho_Chi_Minh')) {
       matches.insert(0, 'Asia/Ho_Chi_Minh');
     }
+
     return matches;
   }
 
@@ -60,7 +85,6 @@ class _WorldTimeBasicCitySearchPageState extends State<WorldTimeBasicCitySearchP
 
   @override
   Widget build(BuildContext context) {
-    // max consistent with controller.addCity
     const int maxCities = 10;
 
     return SafeArea(
@@ -103,14 +127,15 @@ class _WorldTimeBasicCitySearchPageState extends State<WorldTimeBasicCitySearchP
                           displayStringForOption: (option) => option,
                           onSelected: (value) {
                             selectedTimezone.value = value;
-                            tzController.text = value;
+                            final utcString = formatUtcOffset(value);
+                            tzController.text = '$value ($utcString)';
                           },
                           fieldViewBuilder: (context, controllerText, focusNode, onFieldSubmitted) {
                             return TextField(
                               controller: controllerText,
                               focusNode: focusNode,
                               decoration: const InputDecoration(
-                                hintText: 'Search timezone (e.g. Asia/Tokyo)',
+                                hintText: 'Search timezone (e.g. Asia/Tokyo or UTC+7)',
                               ),
                               onChanged: (value) => selectedTimezone.value = value,
                             );
@@ -130,8 +155,9 @@ class _WorldTimeBasicCitySearchPageState extends State<WorldTimeBasicCitySearchP
                                     itemCount: options.length,
                                     itemBuilder: (context, index) {
                                       final option = options.elementAt(index);
+                                      final utcString = formatUtcOffset(option);
                                       return ListTile(
-                                        title: Text(option),
+                                        title: Text('$option ($utcString)'),
                                         onTap: () => onSelected(option),
                                       );
                                     },
@@ -150,7 +176,6 @@ class _WorldTimeBasicCitySearchPageState extends State<WorldTimeBasicCitySearchP
                           return ElevatedButton(
                             onPressed: isFull
                                 ? () {
-                              // Thông báo ngay khi cố gắng thêm khi đã đầy
                               controller.showSafeSnackbar(
                                 'Giới hạn thành phố',
                                 'Bạn chỉ có thể lưu tối đa $maxCities thành phố.',
