@@ -47,7 +47,7 @@ flutter run
 - `intl` – định dạng thời gian  
 - `flutter_launcher_icons` – tuỳ chỉnh icon ứng dụng  
 
-📅 Lưu ý về Google Calendar API
+## 📅 Lưu ý về Google Calendar API
 Ứng dụng này không sử dụng Firebase, nên sẽ không có file google-services.json (Android) hoặc GoogleService-Info.plist (iOS) trong repo.
 Thay vào đó, ứng dụng dùng trực tiếp Google Sign-In SDK để lấy accessToken và gọi Google Calendar API.
 🔧 Để sử dụng chức năng Google Calendar:
@@ -62,7 +62,7 @@ Thay vào đó, ứng dụng dùng trực tiếp Google Sign-In SDK để lấy 
 ## 📄 Giấy phép
 Dự án này sử dụng [MIT License](LICENSE). Bạn có thể sử dụng, sửa đổi và chia sẻ mã nguồn tự do.
 
-🤝 Đóng góp
+## 🤝 Đóng góp
 Mọi ý tưởng, bug report hoặc pull request đều được hoan nghênh.
 Nếu bạn muốn đóng góp vào dự án, hãy làm theo các bước sau:
 1. Fork repo
