@@ -113,7 +113,7 @@ class _TimeRangeOverlayState extends State<TimeRangeOverlay> {
     } else {
       final nowLocal = tz.TZDateTime.now(widget.timelineLocation);
 
-      // KHÚC SỬA: snap về đầu giờ (top of hour) thay vì theo phút hiện tại
+      // snap về đầu giờ (top of hour) thay vì theo phút hiện tại
       final start = nowLocal.hour * 60; // top of current hour
       _dragStartMin = _clampMin(start);
       _dragEndMin = _clampMin(_dragStartMin + widget.minWidthMinutes.toInt());

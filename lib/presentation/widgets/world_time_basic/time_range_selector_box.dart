@@ -87,24 +87,25 @@ class _TimeRangeSelectorBoxState extends State<TimeRangeSelectorBox> {
         final double rawRight = contentEndX - offset;
         final double width = rawRight - rawLeft;
 
-        // Nếu hoàn toàn nằm ngoài viewport, không vẽ (giữ hiệu năng)
         if (rawRight <= 0.0 || rawLeft >= viewportWidth) return const SizedBox.shrink();
         if (width <= 0) return const SizedBox.shrink();
 
-        // Parent Stack phải có clipBehavior: Clip.none để phần overflow hiển thị
         return Stack(
           clipBehavior: Clip.none,
           children: [
             Positioned(
               top: widget.verticalPadding,
               bottom: widget.verticalPadding,
-              left: rawLeft, // đặt trực tiếp theo toạ độ thô (có thể âm)
+              left: rawLeft,
               width: width,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.green, width: 2),
-                  color: const Color(0x0A000000),
-                  borderRadius: BorderRadius.circular(8),
+              child: IgnorePointer(
+                ignoring: true, // cho phép thao tác xuyên qua lớp overlay
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.green, width: 2),
+                    color: const Color(0x0A000000),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ),

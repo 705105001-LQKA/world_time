@@ -1,4 +1,4 @@
-library time_range_utils;
+library;
 
 import 'package:flutter/material.dart';
 

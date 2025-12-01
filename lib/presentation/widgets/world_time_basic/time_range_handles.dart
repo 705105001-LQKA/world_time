@@ -1,4 +1,3 @@
-// time_range_handles.dart
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -159,8 +158,9 @@ class _TimeRangeHandlesState extends State<TimeRangeHandles> {
               final bool nearLeft = startVX <= edgeThreshold && canLeft();
               final bool nearRight = endVX >= vw - edgeThreshold && canRight();
 
-              if (isLeft && nearLeft) _startAutoScroll(false);
-              else if (!isLeft && nearRight) _startAutoScroll(true);
+              if (isLeft && nearLeft) {
+                _startAutoScroll(false);
+              } else if (!isLeft && nearRight) _startAutoScroll(true);
               else _stopAutoScroll();
             },
             onHorizontalDragEnd: (_) {
