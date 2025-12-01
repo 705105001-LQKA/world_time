@@ -61,11 +61,9 @@ class _TimeRangeHandlesState extends State<TimeRangeHandles> {
   @override
   void didUpdateWidget(TimeRangeHandles oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.startMin != widget.startMin || oldWidget.endMin != widget.endMin) {
-      _startMin = widget.startMin;
-      _endMin = normalizeEnd(_startMin, widget.endMin, previousEnd: _endMin);
-      if (mounted) setState(() {});
-    }
+    _startMin = widget.startMin;
+    _endMin = normalizeEnd(_startMin, widget.endMin);
+    if (mounted) setState(() {});
   }
 
   @override
